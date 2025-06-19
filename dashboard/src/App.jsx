@@ -1,22 +1,37 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import DashboardAds from "./components/DashboardAds";
 import DashboardStats from "./components/DashboardStats";
 import TopBar from "./components/TopBar";
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, MenuItem, Menu } from "@mui/material";
+import CssBaseline from "@mui/material/CssBaseline";
+import { Box } from "@mui/material";
 import { ThemeProvider } from "@mui/material/styles";
 import theme from "./styles/theme";
+
+const drawerWidth = 240;
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline />
       <Router>
-        <TopBar />
-        <Box sx={{ p: 4, mb: 8 }}>
-          <Routes>
-            <Route path="/ads" element={<DashboardAds />} />
-            <Route path="/stats" element={<DashboardStats />} />
-            <Route path="/" element={<DashboardAds />} />
-          </Routes>
+        <Box sx={{ display: "flex" }}>
+          <TopBar />
+
+          <Box
+            component="main"
+            sx={{
+              flexGrow: 1,
+              p: 4,
+              //ml: `${drawerWidth}px`,
+              width: "100%",
+            }}
+          >
+            <Routes>
+              <Route path="/ads" element={<DashboardAds />} />
+              <Route path="/stats" element={<DashboardStats />} />
+              <Route path="/" element={<DashboardAds />} />
+            </Routes>
+          </Box>
         </Box>
       </Router>
     </ThemeProvider>

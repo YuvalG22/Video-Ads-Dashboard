@@ -1,78 +1,56 @@
-import { useState } from "react";
-import {
-  AppBar,
-  Toolbar,
-  Typography,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  Box,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import { Link } from "react-router-dom";
+import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box, Typography } from "@mui/material";
+import AdUnitsIcon from "@mui/icons-material/AdUnits";
+import BarChartIcon from "@mui/icons-material/BarChart";
+import { Link, useLocation } from "react-router-dom";
+
+const drawerWidth = 240;
 
 function TopBar() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
 
-  const toggleDrawer = (open) => () => {
-    setDrawerOpen(open);
-  };
-
-  const drawerItems = [
-    { text: "Ads", to: "/ads" },
-    { text: "Statistics", to: "/stats" },
+  const menuItems = [
+    { text: "Ads", to: "/ads", icon: <AdUnitsIcon /> },
+    { text: "Statistics", to: "/stats", icon: <BarChartIcon /> },
   ];
 
   return (
-    <>
-      <AppBar
-        position="fixed"
-        sx={{ bottom: "auto", top: 0, backgroundColor: "background.paper" }}
-      >
-        <Toolbar>
-          <IconButton
-            size="large"
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            onClick={toggleDrawer(true)}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          <Typography variant="h6" sx={{ flexGrow: 1, color: "primary.light" }}>
-            Ads Dashboard
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
-      <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-        <Box
-          sx={{
-            width: 250,
-            backgroundColor: "background.default",
-            height: "100%",
-          }}
-          role="presentation"
-          onClick={toggleDrawer(false)}
-          onKeyDown={toggleDrawer(false)}
-        >
-          <List>
-            {drawerItems.map((item) => (
-              <ListItem key={item.text} disablePadding>
-                <ListItemButton component={Link} to={item.to}>
-                  <ListItemText primary={item.text} />
-                </ListItemButton>
-              </ListItem>
-            ))}
-          </List>
-        </Box>
-      </Drawer>
-    </>
+    <Drawer
+      variant="permanent"
+      sx={{
+        width: drawerWidth,
+        flexShrink: 0,
+        [`& .MuiDrawer-paper`]: {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          backgroundColor: 'background.default',
+          color: 'text.primary',
+        },
+      }}
+    >
+      <Toolbar>
+        <Typography variant="h5" color="primary.main" noWrap>
+          Ads Dashboard
+        </Typography>
+      </Toolbar>
+      <Box sx={{ overflow: 'auto' }}>
+        <List>
+          {menuItems.map((item) => (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                component={Link}
+                to={item.to}
+                selected={location.pathname === item.to}
+              >
+                <ListItemIcon sx={{ color: 'text.primary' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText primary={item.text} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+        </List>
+      </Box>
+    </Drawer>
   );
 }
 
