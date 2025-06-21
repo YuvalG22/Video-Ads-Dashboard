@@ -15,11 +15,12 @@ import {
   BarElement,
   LineElement,
   PointElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
 } from "chart.js";
-import { Bar, Line } from "react-chartjs-2";
+import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 ChartJS.register(
   CategoryScale,
@@ -27,6 +28,7 @@ ChartJS.register(
   BarElement,
   LineElement,
   PointElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -49,52 +51,128 @@ function DashboardStats() {
       });
   }, []);
 
-  
-  const barData = {
-    labels: ads.map((ad) => ad.title),
+  const totalAds = ads.length;
+  const totalImpressions = ads.reduce((sum, ad) => sum + ad.impressions, 0);
+  const totalClicks = ads.reduce((sum, ad) => sum + ad.clicks, 0);
+  const avgCtr =
+    totalImpressions === 0
+      ? 0
+      : ((totalClicks / totalImpressions) * 100).toFixed(2);
+
+  const REVENUE_PER_CLICK = 0.5;
+  const CPM = 5;
+  const revenueFromClicks = totalClicks * REVENUE_PER_CLICK;
+  const revenueFromImpressions = (totalImpressions / 1000) * CPM;
+  const totalRevenue = revenueFromClicks + revenueFromImpressions;
+
+  const topImpressions = [...ads]
+    .sort((a, b) => b.impressions - a.impressions)
+    .slice(0, 10);
+
+  const impressionsData = {
+    labels: topImpressions.map((ad) => ad.title),
     datasets: [
       {
         label: "Impressions",
-        data: ads.map((ad) => ad.impressions),
-        backgroundColor: "#42a5f5",
+        data: topImpressions.map((ad) => ad.impressions),
+        backgroundColor: "#2196F3",
       },
     ],
   };
 
-  const barOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
-    },
+  const ctrSorted = [...ads]
+    .filter((ad) => ad.impressions > 0)
+    .map((ad) => ({
+      ...ad,
+      ctr: parseFloat(((ad.clicks / ad.impressions) * 100).toFixed(2)),
+    }))
+    .sort((a, b) => b.ctr - a.ctr)
+    .slice(0, 10);
+
+  const ctrData = {
+    labels: ctrSorted.map((ad) => ad.title),
+    datasets: [
+      {
+        label: "CTR (%)",
+        data: ctrSorted.map((ad) => ad.ctr),
+        backgroundColor: "#FFA726",
+      },
+    ],
   };
 
-  const lineData = {
-    labels: ads.map((ad) =>
-      new Date(ad.createdAt).toLocaleDateString()
-    ),
+  const monthsOfYear = Array.from({ length: 12 }, (_, i) => {
+    const date = new Date(2025, i, 1);
+    return date.toLocaleString("en-US", { month: "long" });
+  });
+
+  const clicksByMonth = Object.fromEntries(monthsOfYear.map((m) => [m, 0]));
+
+  ads.forEach((ad) => {
+    const date = new Date(ad.createdAt);
+    const month = date.toLocaleString("en-US", { month: "long" });
+    clicksByMonth[month] += ad.clicks;
+  });
+
+  const clicksPerMonthData = {
+    labels: monthsOfYear,
+    datasets: [
+      {
+        label: "Clicks per Month",
+        data: monthsOfYear.map((m) => clicksByMonth[m]),
+        backgroundColor: "#fff",
+        borderColor: "#7E57C2",
+        fill: false,
+      },
+    ],
+  };
+
+  const topClickedAds = [...ads]
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, 5);
+
+  const topClicksData = {
+    labels: topClickedAds.map((ad) => ad.title),
     datasets: [
       {
         label: "Clicks",
-        data: ads.map((ad) => ad.clicks),
-        fill: false,
-        borderColor: "#66bb6a",
-        tension: 0.2,
+        data: topClickedAds.map((ad) => ad.clicks),
+        backgroundColor: "#F44336",
       },
     ],
   };
 
-  const lineOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: "top" },
-      title: { display: false },
-    },
+  const categoryCount = ads.reduce((acc, ad) => {
+    acc[ad.category] = (acc[ad.category] || 0) + 1;
+    return acc;
+  }, {});
+
+  const pieData = {
+    labels: Object.keys(categoryCount),
+    datasets: [
+      {
+        label: "Ads per Category",
+        data: Object.values(categoryCount),
+        backgroundColor: [
+          "#2196F3",
+          "#4CAF50",
+          "#FFC107",
+          "#009688",
+          "#9C27B0",
+          "#F44336",
+        ],
+      },
+    ],
+  };
+
+  const commonCardStyle = {
+    backgroundColor: "background.paper",
+    p: 2,
+    width: "1000px",
   };
 
   return (
-    <Box sx={{ml: "120px", px: 2, py: 4, width: "100%" }}>
-      <Typography variant="h5" sx={{ mb: 3, textAlign: "center" }}>
+    <Box sx={{ px: 3, py: 4 }}>
+      <Typography variant="h4" sx={{ textAlign: "center", mb: 4 }}>
         Statistics Overview
       </Typography>
 
@@ -103,29 +181,203 @@ function DashboardStats() {
           <CircularProgress />
         </Box>
       ) : (
-        <Grid container spacing={4}>
-          <Grid item xs={12}>
-            <Card sx={{ backgroundColor: "background.paper", p: 2, width: "100%" }}>
-              <CardContent sx={{ height: 360 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Impressions per Ad
-                </Typography>
-                <Bar data={barData} options={barOptions} />
-              </CardContent>
-            </Card>
+        <>
+          {/* Summary Cards */}
+          <Grid container spacing={2} justifyContent="center" sx={{ mb: 4 }}>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#37474F",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">Total Ads</Typography>
+                  <Typography variant="h4">{totalAds}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#1976D2",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">Total Impressions</Typography>
+                  <Typography variant="h4">{totalImpressions}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#388E3C",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">Total Clicks</Typography>
+                  <Typography variant="h4">{totalClicks}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#F57C00",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">Avg. CTR (%)</Typography>
+                  <Typography variant="h4">{avgCtr}</Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#00695C",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">
+                    Revenue from Clicks
+                  </Typography>
+                  <Typography variant="h4">
+                    ${revenueFromClicks.toFixed(2)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#512DA8",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">
+                    Revenue from Views
+                  </Typography>
+                  <Typography variant="h4">
+                    ${revenueFromImpressions.toFixed(2)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            <Grid item>
+              <Card
+                sx={{
+                  minWidth: 200,
+                  backgroundColor: "#B71C1C",
+                  color: "#fff",
+                }}
+              >
+                <CardContent>
+                  <Typography variant="subtitle1">Total Revenue</Typography>
+                  <Typography variant="h4">
+                    ${totalRevenue.toFixed(2)}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
 
-          <Grid item xs={12}>
-            <Card sx={{ backgroundColor: "background.paper", p: 2, width: "100%" }}>
-              <CardContent sx={{ height: 360 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Clicks Over Time
-                </Typography>
-                <Line data={lineData} options={lineOptions} />
-              </CardContent>
-            </Card>
+          {/* Charts */}
+          <Grid container spacing={4} justifyContent="center">
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Top 10 Ads by Impressions
+                  </Typography>
+                  <Bar
+                    data={impressionsData}
+                    options={{ responsive: true, indexAxis: "x" }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Top 10 Ads by CTR
+                  </Typography>
+                  <Bar data={ctrData} options={{ responsive: true }} />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Top 5 Ads by Clicks
+                  </Typography>
+                  <Bar data={topClicksData} options={{ responsive: true }} />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Clicks per Month
+                  </Typography>
+                  <Line
+                    data={clicksPerMonthData}
+                    options={{ responsive: true }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Category Distribution
+                  </Typography>
+                  <Box
+                    sx={{
+                      height: "468px",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Doughnut
+                      data={pieData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: "right",
+                            labels: { color: "#fff" },
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
-        </Grid>
+        </>
       )}
     </Box>
   );

@@ -30,23 +30,26 @@ function DashboardAds() {
     videoUrl: "",
   });
 
-  const fetchAds = () => {
-    setLoading(true);
-    axios
-      .get("https://video-ads-api.onrender.com/api/ads")
-      .then((response) => {
-        setAds(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error fetching ads:", error);
-        setLoading(false);
-      });
-  };
+  const [sortBy, setSortBy] = useState(null);
+  const [sortOrder, setSortOrder] = useState("desc");
 
   useEffect(() => {
     fetchAds();
   }, []);
+
+  const fetchAds = () => {
+    setLoading(true);
+    axios
+      .get("https://video-ads-api.onrender.com/api/ads")
+      .then((res) => {
+        setAds(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching ads:", err);
+        setLoading(false);
+      });
+  };
 
   const handleAdd = () => {
     axios
@@ -66,19 +69,32 @@ function DashboardAds() {
       .catch((err) => console.error("Delete failed:", err));
   };
 
+  const sortedAds = [...ads].sort((a, b) => {
+    if (!sortBy) return 0;
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+    return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+  });
+
+  const toggleSort = (field) => {
+    if (sortBy === field) {
+      setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(field);
+      setSortOrder("desc");
+    }
+  };
+
   return (
-    <Box
-      sx={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        py: 4
-      }}
-    >
+    <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
       <Box sx={{ width: "100%", maxWidth: 1000, mx: "auto" }}>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
-          <Typography variant="h5">My Ads</Typography>
-          <Button variant="contained" color="primary" onClick={() => setModalOpen(true)}>
+          <Typography variant="h4">My Ads</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => setModalOpen(true)}
+          >
             Add New Ad
           </Button>
         </Box>
@@ -90,7 +106,7 @@ function DashboardAds() {
         ) : (
           <TableContainer
             component={Paper}
-            sx={{ backgroundColor: "background.paper", width: "100%", mx: "auto" }}
+            sx={{ backgroundColor: "background.paper" }}
           >
             <Table>
               <TableHead>
@@ -98,15 +114,37 @@ function DashboardAds() {
                   <TableCell align="center">Title</TableCell>
                   <TableCell align="center">Advertiser</TableCell>
                   <TableCell align="center">Duration (s)</TableCell>
-                  <TableCell align="center">Impressions</TableCell>
-                  <TableCell align="center">Clicks</TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => toggleSort("impressions")}
+                  >
+                    Impressions{" "}
+                    {sortBy === "impressions"
+                      ? sortOrder === "asc"
+                        ? "↑"
+                        : "↓"
+                      : ""}
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => toggleSort("clicks")}
+                  >
+                    Clicks{" "}
+                    {sortBy === "clicks"
+                      ? sortOrder === "asc"
+                        ? "↑"
+                        : "↓"
+                      : ""}
+                  </TableCell>
                   <TableCell align="center">Created</TableCell>
                   <TableCell align="center">Video</TableCell>
                   <TableCell align="center">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {ads.map((ad) => (
+                {sortedAds.map((ad) => (
                   <TableRow key={ad._id}>
                     <TableCell align="center">{ad.title}</TableCell>
                     <TableCell align="center">{ad.advertiser}</TableCell>
@@ -142,6 +180,7 @@ function DashboardAds() {
           </TableContainer>
         )}
 
+        {/* Modal for Adding Ad */}
         <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
           <Box
             sx={{
@@ -169,7 +208,9 @@ function DashboardAds() {
                 fullWidth
                 margin="dense"
                 value={newAd.advertiser}
-                onChange={(e) => setNewAd({ ...newAd, advertiser: e.target.value })}
+                onChange={(e) =>
+                  setNewAd({ ...newAd, advertiser: e.target.value })
+                }
               />
               <TextField
                 label="Duration"
@@ -177,14 +218,18 @@ function DashboardAds() {
                 fullWidth
                 margin="dense"
                 value={newAd.duration}
-                onChange={(e) => setNewAd({ ...newAd, duration: parseInt(e.target.value) })}
+                onChange={(e) =>
+                  setNewAd({ ...newAd, duration: parseInt(e.target.value) })
+                }
               />
               <TextField
                 label="Video URL"
                 fullWidth
                 margin="dense"
                 value={newAd.videoUrl}
-                onChange={(e) => setNewAd({ ...newAd, videoUrl: e.target.value })}
+                onChange={(e) =>
+                  setNewAd({ ...newAd, videoUrl: e.target.value })
+                }
               />
             </DialogContent>
             <DialogActions>
