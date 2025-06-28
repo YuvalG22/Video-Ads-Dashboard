@@ -1,7 +1,9 @@
 import { Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Toolbar, Box, Typography } from "@mui/material";
 import AdUnitsIcon from "@mui/icons-material/AdUnits";
 import BarChartIcon from "@mui/icons-material/BarChart";
+import MapIcon from "@mui/icons-material/Map";
 import { Link, useLocation } from "react-router-dom";
+import { icon } from "leaflet";
 
 const drawerWidth = 240;
 
@@ -11,6 +13,7 @@ function TopBar() {
   const menuItems = [
     { text: "Ads", to: "/ads", icon: <AdUnitsIcon /> },
     { text: "Statistics", to: "/stats", icon: <BarChartIcon /> },
+    { text: "Locations", to: "/adsmap", icon: <MapIcon /> }
   ];
 
   return (

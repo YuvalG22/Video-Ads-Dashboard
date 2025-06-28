@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import DashboardAds from "./components/DashboardAds";
 import DashboardStats from "./components/DashboardStats";
+import AdsMap from "./components/AdsMap";
 import TopBar from "./components/TopBar";
 import CssBaseline from "@mui/material/CssBaseline";
 import { Box } from "@mui/material";
@@ -22,7 +23,6 @@ function App() {
             sx={{
               flexGrow: 1,
               p: 4,
-              //ml: `${drawerWidth}px`,
               width: "100%",
             }}
           >
@@ -30,6 +30,7 @@ function App() {
               <Route path="/ads" element={<DashboardAds />} />
               <Route path="/stats" element={<DashboardStats />} />
               <Route path="/" element={<DashboardAds />} />
+              <Route path="/adsmap" element={<AdsMap />} />
             </Routes>
           </Box>
         </Box>

@@ -164,6 +164,30 @@ function DashboardStats() {
     ],
   };
 
+  const clicksByHour = Array.from({ length: 24 }, () => 0);
+
+  ads.forEach((ad) => {
+    if (ad.clickTimestamps) {
+      ad.clickTimestamps.forEach((timestamp) => {
+        const hour = new Date(timestamp).getHours();
+        clicksByHour[hour]++;
+      });
+    }
+  });
+
+  const clicksPerHourData = {
+    labels: Array.from({ length: 24 }, (_, i) => `${i}:00`),
+    datasets: [
+      {
+        label: "Clicks per Hour",
+        data: clicksByHour,
+        backgroundColor: "#4dd0e1",
+        borderColor: "#00838f",
+        fill: true,
+      },
+    ],
+  };
+
   const commonCardStyle = {
     backgroundColor: "background.paper",
     p: 2,
@@ -340,6 +364,20 @@ function DashboardStats() {
                   </Typography>
                   <Line
                     data={clicksPerMonthData}
+                    options={{ responsive: true }}
+                  />
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12}>
+              <Card sx={commonCardStyle}>
+                <CardContent>
+                  <Typography variant="h6" sx={{ mb: 2 }}>
+                    Clicks per Hour
+                  </Typography>
+                  <Line
+                    data={clicksPerHourData}
                     options={{ responsive: true }}
                   />
                 </CardContent>

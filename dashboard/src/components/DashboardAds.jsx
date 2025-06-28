@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
   Box,
   Typography,
   CircularProgress,
@@ -23,11 +27,16 @@ function DashboardAds() {
   const [ads, setAds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingAdId, setEditingAdId] = useState(null);
+
   const [newAd, setNewAd] = useState({
     title: "",
     advertiser: "",
     duration: 30,
     videoUrl: "",
+    advertiserLink: "",
+    city: "",
   });
 
   const [sortBy, setSortBy] = useState(null);
@@ -51,15 +60,38 @@ function DashboardAds() {
       });
   };
 
-  const handleAdd = () => {
-    axios
-      .post("https://video-ads-api.onrender.com/api/ads", newAd)
+  const handleSave = () => {
+    const url = editMode
+      ? `https://video-ads-api.onrender.com/api/ads/${editingAdId}`
+      : "https://video-ads-api.onrender.com/api/ads";
+
+    const method = editMode ? axios.put : axios.post;
+
+    method(url, newAd)
       .then(() => {
         setModalOpen(false);
-        setNewAd({ title: "", advertiser: "", duration: 30, videoUrl: "" });
+        setEditMode(false);
+        setEditingAdId(null);
+        setNewAd({ title: "", advertiser: "", duration: 30, videoUrl: "", advertiserLink: "", city: "" });
         fetchAds();
       })
-      .catch((err) => console.error("Add failed:", err));
+      .catch((err) =>
+        console.error(editMode ? "Update failed:" : "Add failed:", err)
+      );
+  };
+
+  const handleEdit = (ad) => {
+    setNewAd({
+      title: ad.title,
+      advertiser: ad.advertiser,
+      duration: ad.duration,
+      videoUrl: ad.videoUrl,
+      advertiserLink: ad.advertiserLink,
+      city: ad.city || "",
+    });
+    setEditMode(true);
+    setEditingAdId(ad._id);
+    setModalOpen(true);
   };
 
   const handleDelete = (id) => {
@@ -68,13 +100,6 @@ function DashboardAds() {
       .then(() => fetchAds())
       .catch((err) => console.error("Delete failed:", err));
   };
-
-  const sortedAds = [...ads].sort((a, b) => {
-    if (!sortBy) return 0;
-    const aValue = a[sortBy];
-    const bValue = b[sortBy];
-    return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
-  });
 
   const toggleSort = (field) => {
     if (sortBy === field) {
@@ -85,6 +110,13 @@ function DashboardAds() {
     }
   };
 
+  const sortedAds = [...ads].sort((a, b) => {
+    if (!sortBy) return 0;
+    const aValue = a[sortBy];
+    const bValue = b[sortBy];
+    return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+  });
+
   return (
     <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
       <Box sx={{ width: "100%", maxWidth: 1000, mx: "auto" }}>
@@ -93,7 +125,11 @@ function DashboardAds() {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => setModalOpen(true)}
+            onClick={() => {
+              setModalOpen(true);
+              setEditMode(false);
+              setNewAd({ title: "", advertiser: "", duration: 30, videoUrl: "", advertiserLink: "", city: "" });
+            }}
           >
             Add New Ad
           </Button>
@@ -104,10 +140,7 @@ function DashboardAds() {
             <CircularProgress />
           </Box>
         ) : (
-          <TableContainer
-            component={Paper}
-            sx={{ backgroundColor: "background.paper" }}
-          >
+          <TableContainer component={Paper} sx={{ backgroundColor: "background.paper" }}>
             <Table>
               <TableHead>
                 <TableRow>
@@ -120,11 +153,7 @@ function DashboardAds() {
                     onClick={() => toggleSort("impressions")}
                   >
                     Impressions{" "}
-                    {sortBy === "impressions"
-                      ? sortOrder === "asc"
-                        ? "↑"
-                        : "↓"
-                      : ""}
+                    {sortBy === "impressions" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
                   </TableCell>
                   <TableCell
                     align="center"
@@ -132,11 +161,7 @@ function DashboardAds() {
                     onClick={() => toggleSort("clicks")}
                   >
                     Clicks{" "}
-                    {sortBy === "clicks"
-                      ? sortOrder === "asc"
-                        ? "↑"
-                        : "↓"
-                      : ""}
+                    {sortBy === "clicks" ? (sortOrder === "asc" ? "↑" : "↓") : ""}
                   </TableCell>
                   <TableCell align="center">Created</TableCell>
                   <TableCell align="center">Video</TableCell>
@@ -167,6 +192,14 @@ function DashboardAds() {
                     <TableCell align="center">
                       <Button
                         variant="outlined"
+                        color="secondary"
+                        sx={{ mr: 1 }}
+                        onClick={() => handleEdit(ad)}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outlined"
                         color="error"
                         onClick={() => handleDelete(ad._id)}
                       >
@@ -180,7 +213,6 @@ function DashboardAds() {
           </TableContainer>
         )}
 
-        {/* Modal for Adding Ad */}
         <Modal open={modalOpen} onClose={() => setModalOpen(false)}>
           <Box
             sx={{
@@ -194,7 +226,7 @@ function DashboardAds() {
               width: 400,
             }}
           >
-            <DialogTitle>Add New Ad</DialogTitle>
+            <DialogTitle>{editMode ? "Edit Ad" : "Add New Ad"}</DialogTitle>
             <DialogContent>
               <TextField
                 label="Title"
@@ -231,11 +263,40 @@ function DashboardAds() {
                   setNewAd({ ...newAd, videoUrl: e.target.value })
                 }
               />
+              <TextField
+                label="Advertiser Link"
+                fullWidth
+                margin="dense"
+                value={newAd.advertiserLink}
+                onChange={(e) =>
+                  setNewAd({ ...newAd, advertiserLink: e.target.value })
+                }
+              />
+              <FormControl fullWidth margin="dense">
+                <InputLabel>City</InputLabel>
+                <Select
+                  value={newAd.city}
+                  label="City"
+                  onChange={(e) => setNewAd({ ...newAd, city: e.target.value })}
+                >
+                  <MenuItem value="Tel Aviv">Tel Aviv</MenuItem>
+                  <MenuItem value="Jerusalem">Jerusalem</MenuItem>
+                  <MenuItem value="Haifa">Haifa</MenuItem>
+                  <MenuItem value="Beer Sheva">Beer Sheva</MenuItem>
+                  <MenuItem value="Netanya">Netanya</MenuItem>
+                  <MenuItem value="Rishon LeZion">Rishon LeZion</MenuItem>
+                  <MenuItem value="Eilat">Eilat</MenuItem>
+                  <MenuItem value="Tiberias">Tiberias</MenuItem>
+                  <MenuItem value="Herzliya">Herzliya</MenuItem>
+                  <MenuItem value="Ashdod">Ashdod</MenuItem>
+                  <MenuItem value="Current">Current</MenuItem>
+                </Select>
+              </FormControl>
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setModalOpen(false)}>Cancel</Button>
-              <Button onClick={handleAdd} variant="contained">
-                Add
+              <Button onClick={handleSave} variant="contained">
+                {editMode ? "Save Changes" : "Add"}
               </Button>
             </DialogActions>
           </Box>

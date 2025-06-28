@@ -84,10 +84,49 @@ function randomDateWithinLastYear() {
   return new Date(timestamp).toISOString();
 }
 
+function generateClickTimestamps(clicks, startDate) {
+  const timestamps = [];
+  const start = new Date(startDate).getTime();
+  const now = Date.now();
+  for (let i = 0; i < clicks; i++) {
+    const time = new Date(start + Math.random() * (now - start));
+    timestamps.push(time.toISOString());
+  }
+  return timestamps;
+}
+
+function randomLocationInIsrael() {
+  const locations = [
+    { name: "Tel Aviv", coordinates: [34.7818, 32.0853] },
+    { name: "Jerusalem", coordinates: [35.2137, 31.7683] },
+    { name: "Haifa", coordinates: [34.9896, 32.7940] },
+    { name: "Beer Sheva", coordinates: [34.7913, 31.2518] },
+    { name: "Herzliya", coordinates: [34.8409, 32.1663] },
+    { name: "Netanya", coordinates: [34.8555, 32.3215] },
+    { name: "Rishon LeZion", coordinates: [34.7894, 31.9730] },
+    { name: "Ashdod", coordinates: [34.6405, 31.8014] },
+    { name: "Holon", coordinates: [34.7790, 32.0104] },
+    { name: "Petah Tikva", coordinates: [34.8878, 32.0871] },
+    { name: "Modiin", coordinates: [35.0046, 31.8981] },
+    { name: "Ra'anana", coordinates: [34.8739, 32.1848] },
+    { name: "Tiberias", coordinates: [35.5283, 32.7922] },
+    { name: "Kiryat Shmona", coordinates: [35.5717, 33.2076] },
+    { name: "Eilat", coordinates: [34.9500, 29.5581] },
+  ];
+
+  const selected = locations[Math.floor(Math.random() * locations.length)];
+  const [lng, lat] = selected.coordinates;
+  return {
+    type: "Point",
+    coordinates: [lng, lat]
+  };
+}
+
 function generateAd(title, advertiser) {
   const impressions = Math.floor(Math.random() * 2000) + 100;
-  const clicks = Math.floor(impressions * (Math.random() * 0.3));
+  const clicks = Math.max(1, Math.floor(impressions * (Math.random() * 0.3)));
   const category = advertiserToCategory[advertiser];
+  const createdAt = randomDateWithinLastYear();
 
   return {
     title,
@@ -95,9 +134,12 @@ function generateAd(title, advertiser) {
     category,
     duration: [15, 30, 45, 60][Math.floor(Math.random() * 4)],
     videoUrl: "https://cdn.example.com/video.mp4",
+    advertiserLink: "https://cdn.example.com",
     impressions,
     clicks,
-    createdAt: randomDateWithinLastYear(),
+    createdAt,
+    clickTimestamps: generateClickTimestamps(clicks, createdAt),
+    location: randomLocationInIsrael(),
   };
 }
 
